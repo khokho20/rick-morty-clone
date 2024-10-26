@@ -24,7 +24,7 @@ function App() {
   return (
     <>
     <nav>
-      <h2 className="bg-red-600">Rick & Morty <span className="text-blue-500">Wiki</span></h2>
+      <h2 className="text-3xl text-red-700 p-2 text-bold">Rick & Morty <span className="text-blue-600 text-3xl">Wiki</span></h2>
     </nav>
     <main className="mt-10 font-mono">
        { data.length > 0 && 
