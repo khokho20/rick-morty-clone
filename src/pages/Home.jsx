@@ -1,111 +1,123 @@
-import {useState, useEffect} from "react"
+import { useState, useEffect } from "react";
 import Card from "../component/Card";
-import Navbar from "../layouts/Navbar";
+import Filters from "../component/Filters";
+import SearchBar from "../component/SearchBar";
 
 function Home() {
-  const [data, setData] = useState([]);
+  const [characters, setCharacters] = useState([]);
   const [page, setPage] = useState(1);
   const [info, setInfo] = useState({});
-  const api = `https://rickandmortyapi.com/api/character?page=${page}`;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const apiUrl = `https://rickandmortyapi.com/api/character?page=${page}&name=${searchQuery}`;
 
   useEffect(() => {
-    (async function () {
-      let response = await fetch(api)
-        .then((res) => res.json())
-        .catch((err) => console.log(err));
-      const { results, info } = response;
-      setData(results);
-      setInfo(info);
-    })();
-  }, [api]);
-  console.log(info, data)
+    const fetchCharacters = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error("Failed to fetch character data");
+
+        const { results, info } = await response.json();
+        setCharacters(results || []);
+        setInfo(info || {});
+      } catch (err) {
+        console.error("Error fetching character data:", err);
+        setError("Oops! Could not retrieve characters.");
+        setCharacters([]);
+        setInfo({});
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCharacters();
+  }, [apiUrl]);
 
   const handlePageChange = (pageNum) => {
     setPage(pageNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleNext = () => {
-    if (info?.next) {
-      setPage((prev) => prev + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
   };
 
-  const handlePrev = () => {
-    if (info?.prev) {
-      setPage((prev) => prev - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  // Calculate visible page numbers around the current page
   const totalPages = info.pages || 1;
-  const pageRange = 2; 
-  const startPage = Math.max(1, page - pageRange);
-  const endPage = Math.min(totalPages, page + pageRange); 
+  const pageRange = 2;
   const visiblePages = Array.from(
-    { length: endPage - startPage + 1 },
-    (_, i) => startPage + i
+    { length: Math.min(totalPages, page + pageRange) - Math.max(1, page - pageRange) + 1 },
+    (_, i) => Math.max(1, page - pageRange) + i
   );
 
   return (
     <main className="mt-10 font-mono">
-      {data.length > 0 ? (
-        <>
-        <div className="w-5/6 mx-auto grid grid-cols-12 gap-5">
-          <div className="bg-red-300 h-64 col-span-3">
+      <header className="pt-4 pb-12 text-center">
+        <h1 className="text-3xl font-semibold">Characters</h1>
+        <SearchBar search={searchQuery} handleChange={handleSearchChange} />
+      </header>
 
-          </div>
-          <div className="col-span-9">
-            <div className="flex flex-wrap gap-5 ">
-            {data.map((item) => (
-            <Card
-              key={item.id}
-              image={item.image}
-              name={item.name}
-              status={item.status}
-              location={item.location.name}
-            />
-          ))}
+      {isLoading ? (
+        <p className="text-center">Loading...</p>
+      ) : error ? (
+        <p className="text-center text-red-500">{error}</p>
+      ) : characters.length > 0 ? (
+        <div className="w-[90%] mx-auto grid grid-cols-12 gap-5">
+          <aside className="col-span-3">
+            <Filters />
+          </aside>
+          <section className="col-span-9">
+            <div className="flex flex-wrap gap-5">
+              {characters.map(({ id, image, name, status, location }) => (
+                <Card
+                  key={id}
+                  id={id}
+                  image={image}
+                  name={name}
+                  status={status}
+                  location={location.name}
+                />
+              ))}
             </div>
-            <div className="flex justify-center  items-center mt-10 space-x-2">
+
+            <nav className="flex justify-center items-center mt-10 space-x-2">
               <button
-            onClick={handlePrev}
-            disabled={!info.prev}
-            className="px-3 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
-          >
-            Previous
+                onClick={() => handlePageChange(page - 1)}
+                disabled={!info.prev}
+                className="px-3 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
+              >
+                Previous
               </button>
               {visiblePages.map((num) => (
-          <button
-            key={num}
-            onClick={() => handlePageChange(num)}
-            className={`px-3 py-2 rounded ${num === page ? "bg-blue-700 text-white" : "bg-gray-200 text-blue-700"}`}
-          >
-            {num}
-          </button>
+                <button
+                  key={num}
+                  onClick={() => handlePageChange(num)}
+                  className={`px-3 py-2 rounded ${
+                    num === page ? "bg-blue-700 text-white" : "bg-gray-200 text-blue-700"
+                  }`}
+                >
+                  {num}
+                </button>
               ))}
               <button
-            onClick={handleNext}
-            disabled={!info.next}
-            className="px-3 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
-          >
-          Next
+                onClick={() => handlePageChange(page + 1)}
+                disabled={!info.next}
+                className="px-3 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
+              >
+                Next
               </button>
-            </div>
-          </div>
+            </nav>
+          </section>
         </div>
-        </>
-      ): (
-        <div>
-            <p>No data found:)</p>
-        </div>
+      ) : (
+        <p className="text-center">No data found :)</p>
       )}
-      
     </main>
   );
 }
-
 
 export default Home;

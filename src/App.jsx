@@ -3,6 +3,7 @@ import React from "react";
 import Navbar from "./layouts/Navbar";
 import Home from "./pages/Home";
 import Footer from "./layouts/Footer";
+import CardDetail from "./pages/CardDetail";
 
 
 function CardDetails() {
@@ -27,7 +28,7 @@ function App() {
       </div>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/:id" element={<CardDetails />} />
+        <Route path="/:id" element={<CardDetail />} />
         <Route path="/episodes" element={<Episodes />} />
         <Route path="/episodes/:id" element={<CardDetails />} />
         <Route path="/location" element={<Location />} />
@@ -41,3 +42,4 @@ function App() {
 }
 
 export default App;
+
